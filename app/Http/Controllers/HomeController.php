@@ -22,7 +22,8 @@ class HomeController extends Controller
             });
         }
         $events = $query->get();
-        return view('welcome', compact('partners', 'events', 'categories'));
+        $event = $events->first(); // Ambil event pertama untuk hero section
+        return view('welcome', compact('partners', 'events', 'event', 'categories'));
     }
 }
 

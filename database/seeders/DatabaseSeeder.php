@@ -16,23 +16,25 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // 1. Akun Admin Utama
-        \App\Models\User::create([
-            'name' => 'Admin Amikom',
-            'email' => 'admin@amikom.ac.id',
-            'password' => bcrypt('password'),
-            'role' => 'admin',
-        ]);
+        \App\Models\User::firstOrCreate(
+            ['email' => 'admin@amikom.ac.id'],
+            [
+                'name' => 'Admin Amikom',
+                'password' => bcrypt('password'),
+                'role' => 'admin',
+            ]
+        );
             
         // 2. Insert Kategori Event
-            $category = \App\Models\Category::create([
-            'name' => 'Seminar IT',
-            'slug' => 'seminar-it',
-        ]);
+        $category = \App\Models\Category::firstOrCreate(
+            ['slug' => 'seminar-it'],
+            ['name' => 'Seminar IT']
+        );
 
-        $category2 = \App\Models\Category::firstOrCreate([
-            'name' => 'Entertaiment',
-            'slug' => 'entertaiment',
-        ]);
+        $category2 = \App\Models\Category::firstOrCreate(
+            ['slug' => 'entertaiment'],
+            ['name' => 'Entertaiment']
+        );
             
         // 3. Insert Sampel Events
         \App\Models\Event::create([
