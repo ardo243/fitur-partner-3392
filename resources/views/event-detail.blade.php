@@ -36,7 +36,7 @@
                             <p class="text-xs text-slate-500">Organisasi Penyelenggara</p>
                         </div>
                     @elseif($event->partner)
-                        <img src="{{ $event->partner->logo_url }}" alt="{{ $event->partner->name }}" class="w-12 h-12 rounded-full object-cover">
+                        <img src="{{ str_starts_with($event->partner->logo_url, 'http') ? $event->partner->logo_url : asset('storage/' . $event->partner->logo_url) }}" alt="{{ $event->partner->name }}" class="w-12 h-12 rounded-full object-cover">
                         <div>
                             <p class="font-bold text-slate-800">
                                 <a href="{{ route('organizer.show', $event->partner->id) }}" class="hover:underline text-indigo-600 font-semibold">{{ $event->partner->name }}</a>

@@ -9,6 +9,7 @@ use App\Http\Controllers\PartnerController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\TransactionController;
+use App\Http\Controllers\Admin\VoucherController;
 
 
 
@@ -22,6 +23,7 @@ Route::get('/checkout/{event}', [App\Http\Controllers\CheckoutController::class,
 Route::post('/checkout/{event}', [App\Http\Controllers\CheckoutController::class, 'store'])->name('checkout.store');
 Route::get('/payment/{order_id}', [\App\Http\Controllers\CheckoutController::class, 'payment'])->name('checkout.payment');
 Route::get('/success/{order_id}', [\App\Http\Controllers\CheckoutController::class, 'success'])->name('checkout.success');
+Route::post('/checkout/voucher/apply', [\App\Http\Controllers\CheckoutController::class, 'applyVoucher'])->name('checkout.voucher.apply');
 Route::post('/midtrans/callback', [\App\Http\Controllers\MidtransWebhookController::class, 'handle']);
 
 // Google OAuth SSO
@@ -100,6 +102,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::resource('partners', PartnerController::class);
         Route::resource('categories', CategoryController::class);
         Route::resource('organizations', \App\Http\Controllers\Admin\OrganizationController::class);
+        // Voucher
+        Route::resource('vouchers', VoucherController::class);
+        Route::patch('vouchers/{voucher}/toggle', [VoucherController::class, 'toggleStatus'])->name('vouchers.toggle');
         
     });
 

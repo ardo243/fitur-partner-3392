@@ -15,12 +15,12 @@
     </style>
 </head>
 
-<body class="bg-indigo-900 text-white min-h-screen flex items-center justify-center p-6 relative overflow-hidden">
+<body class="bg-indigo-900 text-white min-h-screen py-12 px-4 relative">
     <!-- Background elements -->
-    <div class="absolute -left-20 -bottom-20 w-80 h-80 bg-indigo-800 rounded-full opacity-35 blur-3xl"></div>
-    <div class="absolute -right-20 -top-20 w-80 h-80 bg-indigo-700 rounded-full opacity-30 blur-3xl"></div>
+    <div class="fixed -left-20 -bottom-20 w-80 h-80 bg-indigo-800 rounded-full opacity-35 blur-3xl pointer-events-none"></div>
+    <div class="fixed -right-20 -top-20 w-80 h-80 bg-indigo-700 rounded-full opacity-30 blur-3xl pointer-events-none"></div>
 
-    <div class="max-w-2xl w-full bg-white text-slate-900 rounded-[2.5rem] p-8 md:p-10 shadow-2xl relative z-10 animate-fade-in border border-slate-100">
+    <div class="max-w-2xl mx-auto bg-white text-slate-900 rounded-[2.5rem] p-8 md:p-10 shadow-2xl relative z-10 animate-fade-in border border-slate-100">
         <div class="text-center mb-8">
             <div class="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center text-white font-extrabold text-2xl mx-auto mb-4 shadow-lg shadow-indigo-200">
                 AH
@@ -35,7 +35,7 @@
             </div>
         @endif
 
-        <form action="{{ route('organization.register.store') }}" method="POST" class="space-y-5">
+        <form action="{{ route('organization.register.store') }}" method="POST" enctype="multipart/form-data" class="space-y-5">
             @csrf
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -73,6 +73,12 @@
                 <input type="password" name="password" 
                        class="w-full px-5 py-3.5 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-600 outline-none transition font-medium text-slate-700 placeholder-••••••••" 
                        placeholder="Minimal 6 karakter" required>
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Logo Organisasi (Opsional, Max 2MB)</label>
+                <input type="file" name="logo" accept="image/*"
+                       class="w-full px-5 py-3 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-600 outline-none transition font-medium text-slate-700 text-xs file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100 cursor-pointer">
             </div>
 
             <div>

@@ -27,8 +27,14 @@ class AuthController extends Controller
         'email' => 'required|email|unique:organizations,email',
         'password' => 'required|min:6',
         'phone' => 'required',
-        'description' => 'nullable'
+        'description' => 'nullable',
+        'logo' => 'nullable|image|max:2048'
     ]);
+
+    $logoPath = null;
+    if ($request->hasFile('logo')) {
+        $logoPath = $request->file('logo')->store('organizations', 'public');
+    }
 
     Organization::create([
         'name' => $request->name,
@@ -36,6 +42,7 @@ class AuthController extends Controller
         'email' => $request->email,
         'password' => Hash::make($request->password),
         'phone' => $request->phone,
+        'logo' => $logoPath,
         'description' => $request->description,
         'status' => 'active',
     ]);

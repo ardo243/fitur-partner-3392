@@ -54,7 +54,22 @@ public function store(Request $request)
 
      $data['organization_id'] = session('organization_id');
      // Menyimpan data yang telah divalidasi ke dalam tabel menggunakan Model
-     \App\Models\Event::create($data);
+     $event = \App\Models\Event::create($data);
+
+     // Simpan tier harga jika ada
+     if ($request->filled('tiers')) {
+         foreach ($request->input('tiers') as $tier) {
+             if (empty($tier['name']) || !isset($tier['price']) || !isset($tier['quota'])) continue;
+             $event->ticketTiers()->create([
+                 'name'       => $tier['name'],
+                 'price'      => (int) $tier['price'],
+                 'quota'      => (int) $tier['quota'],
+                 'sale_start' => $tier['sale_start'] ?? null,
+                 'sale_end'   => $tier['sale_end'] ?? null,
+                 'sort_order' => (int) ($tier['sort_order'] ?? 0),
+             ]);
+         }
+     }
 
      return redirect()->route('organization.events.index')->with('success', 'Data Event berhasil ditambahkan.');
 }
@@ -112,6 +127,44 @@ public function update(Request $request, Event $event)
     }
 
     $event->update($data);
+
+    // 1. Hapus tier yang ditandai untuk dihapus
+    if ($request->filled('delete_tiers')) {
+        $event->ticketTiers()->whereIn('id', $request->input('delete_tiers'))->delete();
+    }
+
+    // 2. Update tier yang sudah ada
+    if ($request->filled('existing_tiers')) {
+        foreach ($request->input('existing_tiers') as $tierData) {
+            if (empty($tierData['id'])) continue;
+            $tier = $event->ticketTiers()->find($tierData['id']);
+            if ($tier) {
+                $tier->update([
+                    'name'       => $tierData['name'],
+                    'price'      => (int) $tierData['price'],
+                    'quota'      => (int) $tierData['quota'],
+                    'sale_start' => $tierData['sale_start'] ?? null,
+                    'sale_end'   => $tierData['sale_end'] ?? null,
+                    'sort_order' => (int) ($tierData['sort_order'] ?? 0),
+                ]);
+            }
+        }
+    }
+
+    // 3. Tambah tier baru
+    if ($request->filled('tiers')) {
+        foreach ($request->input('tiers') as $tier) {
+            if (empty($tier['name']) || !isset($tier['price']) || !isset($tier['quota'])) continue;
+            $event->ticketTiers()->create([
+                'name'       => $tier['name'],
+                'price'      => (int) $tier['price'],
+                'quota'      => (int) $tier['quota'],
+                'sale_start' => $tier['sale_start'] ?? null,
+                'sale_end'   => $tier['sale_end'] ?? null,
+                'sort_order' => (int) ($tier['sort_order'] ?? 0),
+            ]);
+        }
+    }
 
     return redirect()->route('organization.events.index')
         ->with('success', 'Event berhasil diperbarui.');

@@ -15,12 +15,12 @@
     </style>
 </head>
 
-<body class="bg-indigo-900 text-white min-h-screen flex items-center justify-center p-6 relative overflow-hidden">
+<body class="bg-indigo-900 text-white min-h-screen py-12 px-4 relative">
     <!-- Background elements -->
-    <div class="absolute -left-20 -bottom-20 w-80 h-80 bg-indigo-800 rounded-full opacity-35 blur-3xl"></div>
-    <div class="absolute -right-20 -top-20 w-80 h-80 bg-indigo-700 rounded-full opacity-30 blur-3xl"></div>
+    <div class="fixed -left-20 -bottom-20 w-80 h-80 bg-indigo-800 rounded-full opacity-35 blur-3xl pointer-events-none"></div>
+    <div class="fixed -right-20 -top-20 w-80 h-80 bg-indigo-700 rounded-full opacity-30 blur-3xl pointer-events-none"></div>
 
-    <div class="max-w-md w-full bg-white text-slate-900 rounded-[2.5rem] p-8 md:p-10 shadow-2xl relative z-10 animate-fade-in border border-slate-100">
+    <div class="max-w-md mx-auto bg-white text-slate-900 rounded-[2.5rem] p-8 md:p-10 shadow-2xl relative z-10 animate-fade-in border border-slate-100">
         <div class="text-center mb-8">
             <div class="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center text-white font-extrabold text-2xl mx-auto mb-4 shadow-lg shadow-indigo-200">
                 AH

@@ -167,10 +167,10 @@
         </div>
 
         <!-- Grid Partner Logos -->
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-8 items-center justify-items-center">
+        <div class="flex flex-wrap justify-center gap-6 md:gap-8 items-center">
             @foreach($partners as $partner)
-                <div class="w-full max-w-[150px] aspect-square bg-slate-50 rounded-3xl p-6 flex flex-col items-center justify-center border border-slate-100 hover:border-indigo-200 hover:shadow-lg hover:-translate-y-1 transition duration-300 group">
-                    <img src="{{ $partner->logo_url }}" alt="{{ $partner->name }}" class="max-w-full max-h-[60px] object-contain filter grayscale group-hover:grayscale-0 transition duration-300 rounded" onerror="this.onerror=null; this.src='https://placehold.co/100x100?text={{ urlencode($partner->name) }}'">
+                <div class="w-[130px] sm:w-[150px] aspect-square bg-slate-50 rounded-3xl p-6 flex flex-col items-center justify-center border border-slate-100 hover:border-indigo-200 hover:shadow-lg hover:-translate-y-1 transition duration-300 group">
+                    <img src="{{ str_starts_with($partner->logo_url, 'http') ? $partner->logo_url : asset('storage/' . $partner->logo_url) }}" alt="{{ $partner->name }}" class="max-w-full max-h-[60px] object-contain filter grayscale group-hover:grayscale-0 transition duration-300 rounded" onerror="this.onerror=null; this.src='https://placehold.co/100x100?text={{ urlencode($partner->name) }}'">
                     <span class="text-[10px] font-black text-slate-400 group-hover:text-slate-800 text-center mt-3 uppercase tracking-wider truncate w-full">{{ $partner->name }}</span>
                 </div>
             @endforeach

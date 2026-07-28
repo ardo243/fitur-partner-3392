@@ -39,7 +39,7 @@
                         <p class="font-black text-slate-800">{{ $partner->name }}</p>
                     </td>
                     <td class="px-8 py-6">
-                        <img src="{{ $partner->logo_url }}" class="w-20 h-20 rounded-xl object-cover shadow-sm" alt="Logo {{ $partner->name }}">
+                        <img src="{{ str_starts_with($partner->logo_url, 'http') ? $partner->logo_url : asset('storage/' . $partner->logo_url) }}" class="w-20 h-20 rounded-xl object-cover shadow-sm" alt="Logo {{ $partner->name }}">
                     </td>
                     <td class="px-8 py-6">
                         <div class="flex gap-2">

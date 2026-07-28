@@ -105,6 +105,73 @@
             @error('poster') <span class="text-rose-600 text-xs font-bold mt-1.5 block">{{ $message }}</span> @enderror
         </div>
 
+        {{-- ========== TIER HARGA DINAMIS ========== --}}
+        <div class="mt-4 pt-6 border-t border-slate-100">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h3 class="font-black text-slate-800 text-base">Tier Harga Dinamis</h3>
+                    <p class="text-[11px] text-slate-400 font-medium mt-0.5">Opsional — Pisahkan tiket menjadi Early Bird, Presale, Regular, dll. Jika dikosongkan, harga utama di atas akan digunakan.</p>
+                </div>
+                <button type="button" id="addTierBtn"
+                    class="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 rounded-xl font-bold text-xs border border-indigo-100 hover:bg-indigo-100 transition shadow-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Tambah Tier
+                </button>
+            </div>
+
+            <div id="tierContainer" class="space-y-4">
+                @foreach($event->ticketTiers as $index => $tier)
+                <div class="relative bg-white border-2 border-slate-100 shadow-sm rounded-2xl p-5 space-y-4">
+                    <button type="button" onclick="removeExistingTier(this, {{ $tier->id }})"
+                        class="absolute top-3 right-3 p-1.5 text-slate-400 hover:text-rose-500 bg-slate-50 rounded-lg transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                    </button>
+                    <input type="hidden" name="existing_tiers[{{ $index }}][id]" value="{{ $tier->id }}">
+                    <input type="hidden" name="existing_tiers[{{ $index }}][sort_order]" value="{{ $tier->sort_order }}">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="col-span-2 md:col-span-1">
+                            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Nama Tier</label>
+                            <input type="text" name="existing_tiers[{{ $index }}][name]" value="{{ $tier->name }}"
+                                class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 outline-none font-bold text-slate-700 text-sm transition" required>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Harga (Rp)</label>
+                            <input type="number" name="existing_tiers[{{ $index }}][price]" value="{{ $tier->price }}" min="0"
+                                class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 outline-none font-bold text-slate-700 text-sm transition" required>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Kuota</label>
+                            <input type="number" name="existing_tiers[{{ $index }}][quota]" value="{{ $tier->quota }}" min="1"
+                                class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 outline-none font-bold text-slate-700 text-sm transition" required>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Terjual</label>
+                            <input type="number" value="{{ $tier->sold_count }}" disabled
+                                class="w-full px-4 py-3 bg-slate-100 border border-slate-200 rounded-xl outline-none font-bold text-slate-400 text-sm cursor-not-allowed">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Mulai Dijual</label>
+                            <input type="datetime-local" name="existing_tiers[{{ $index }}][sale_start]" value="{{ $tier->sale_start ? $tier->sale_start->format('Y-m-d\TH:i') : '' }}"
+                                class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 outline-none font-medium text-slate-600 text-sm transition">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Berakhir Dijual</label>
+                            <input type="datetime-local" name="existing_tiers[{{ $index }}][sale_end]" value="{{ $tier->sale_end ? $tier->sale_end->format('Y-m-d\TH:i') : '' }}"
+                                class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 outline-none font-medium text-slate-600 text-sm transition">
+                        </div>
+                    </div>
+                </div>
+                @endforeach
+            </div>
+            <div id="deletedTiersContainer"></div>
+        </div>
+
         <div class="pt-6 flex justify-end gap-4 border-t border-slate-100">
             <a href="{{ route('organization.events.index') }}" 
                class="px-6 py-4 text-slate-500 font-bold hover:text-slate-800 rounded-xl transition">
@@ -117,6 +184,69 @@
         </div>
     </form>
 </div>
+
+<script>
+let tierIndex = {{ $event->ticketTiers->count() }};
+const tierNames = ['Early Bird', 'Presale 1', 'Presale 2', 'Regular', 'VIP'];
+
+document.getElementById('addTierBtn').addEventListener('click', function () {
+    const container = document.getElementById('tierContainer');
+    const suggestedName = tierNames[tierIndex] ?? ('Tier ' + (tierIndex + 1));
+    const row = document.createElement('div');
+    row.className = 'relative bg-white border-2 border-slate-100 shadow-sm rounded-2xl p-5 space-y-4';
+    row.innerHTML = `
+        <button type="button" onclick="this.closest('div.relative').remove()"
+            class="absolute top-3 right-3 p-1.5 text-slate-400 hover:text-rose-500 bg-slate-50 rounded-lg transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </button>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="col-span-2 md:col-span-1">
+                <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Nama Tier</label>
+                <input type="text" name="tiers[${tierIndex}][name]" value="${suggestedName}" placeholder="Early Bird"
+                    class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 outline-none font-bold text-slate-700 text-sm transition" required>
+            </div>
+            <div>
+                <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Harga (Rp)</label>
+                <input type="number" name="tiers[${tierIndex}][price]" placeholder="75000" min="0"
+                    class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 outline-none font-bold text-slate-700 text-sm transition" required>
+            </div>
+            <div>
+                <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Kuota</label>
+                <input type="number" name="tiers[${tierIndex}][quota]" placeholder="50" min="1"
+                    class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 outline-none font-bold text-slate-700 text-sm transition" required>
+            </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Mulai Dijual</label>
+                <input type="datetime-local" name="tiers[${tierIndex}][sale_start]"
+                    class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 outline-none font-medium text-slate-600 text-sm transition">
+            </div>
+            <div>
+                <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Berakhir Dijual</label>
+                <input type="datetime-local" name="tiers[${tierIndex}][sale_end]"
+                    class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 outline-none font-medium text-slate-600 text-sm transition">
+            </div>
+        </div>
+        <input type="hidden" name="tiers[${tierIndex}][sort_order]" value="${tierIndex}">
+    `;
+    container.appendChild(row);
+    tierIndex++;
+});
+
+function removeExistingTier(btn, id) {
+    if(!confirm('Yakin ingin menghapus tier ini? Jika sudah ada tiket terjual, ini dapat bermasalah.')) return;
+    const container = document.getElementById('deletedTiersContainer');
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'delete_tiers[]';
+    input.value = id;
+    container.appendChild(input);
+    btn.closest('div.relative').remove();
+}
+</script>
 
 <script>
     // Preview file name when selected
