@@ -31,7 +31,18 @@
                     </td>
                     <td class="px-8 py-6">
                         <p class="font-black text-slate-800">{{ $event->title }}</p>
-                        <p class="text-xs text-slate-400">{{ $event->category->name ?? '-' }} • {{ $event->date }}</p>
+                        <div class="flex items-center gap-2 mt-1">
+                            <p class="text-xs text-slate-400">{{ $event->category->name ?? '-' }} • {{ $event->date ? \Carbon\Carbon::parse($event->date)->format('d M Y, H:i') : '-' }}</p>
+                            @if($event->date && \Carbon\Carbon::parse($event->date)->lt(now()))
+                                <span class="inline-block bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded-md border border-slate-200">
+                                    Selesai
+                                </span>
+                            @else
+                                <span class="inline-block bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-md border border-emerald-100">
+                                    Aktif
+                                </span>
+                            @endif
+                        </div>
                     </td>
                     <td class="px-8 py-6">
                         <p class="font-bold text-indigo-600">Rp {{ number_format($event->price, 0, ',', '.') }}</p>

@@ -14,8 +14,8 @@ class EventController extends Controller
 
     public function show(\App\Models\Event $event)
     {
-    // Eager load the category relationship
-    $event->load('category');
+    // Eager load relationships
+    $event->load(['category', 'organization', 'partner']);
     
     // Mengambil daftar kategori untuk keperluan menu footer
     $categories = \App\Models\Category::all();

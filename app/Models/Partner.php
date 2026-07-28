@@ -10,4 +10,9 @@ class Partner extends Model
         'name',
         'logo_url'
     ];
+
+    public function events()
+    {
+        return $this->hasMany(Event::class);
+    }
 }

@@ -20,6 +20,7 @@
             // Alias middleware
             $middleware->alias([
                 'admin' => \App\Http\Middleware\AdminMiddleware::class,
+                'organization' => \App\Http\Middleware\OrganizationMiddleware::class,
             ]);
         })
         ->withExceptions(function (Exceptions $exceptions): void {

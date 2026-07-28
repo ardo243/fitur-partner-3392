@@ -35,11 +35,22 @@
             <a href="#" class="hover:text-indigo-600 transition">Kategori</a>
             <a href="#" class="hover:text-indigo-600 transition">Tentang Kami</a>
         </div>
-        <!-- <div class="flex gap-3">
-            <button class="px-5 py-2.5 rounded-xl font-semibold hover:bg-slate-200 transition">Login</button>
-            <button
-                class="px-5 py-2.5 bg-indigo-600 text-white rounded-xl font-semibold shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition">Daftar</button>
-        </div> -->
+        <div class="flex gap-3 items-center">
+            @auth
+                <div class="flex items-center gap-3 bg-indigo-50 border border-indigo-100 rounded-xl px-4 py-2">
+                    <img src="{{ auth()->user()->avatar ?? 'https://ui-avatars.com/api/?name=' . urlencode(auth()->user()->name) . '&background=e0e7ff&color=4f46e5' }}" class="w-8 h-8 rounded-full border border-indigo-200" alt="Avatar">
+                    <span class="text-sm font-bold text-slate-800">{{ auth()->user()->name }}</span>
+                </div>
+                <form action="{{ route('admin.logout') }}" method="POST" class="inline">
+                    @csrf
+                    <button type="submit" class="px-4 py-2 border border-slate-200 text-slate-700 rounded-xl font-bold text-sm hover:bg-slate-50 transition">
+                        Keluar
+                    </button>
+                </form>
+            @else
+                <a href="{{ route('login') }}" class="px-5 py-2.5 bg-indigo-600 text-white rounded-xl font-semibold shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition">Masuk</a>
+            @endauth
+        </div>
     </nav>
     @yield('content')
     <!-- Footer -->
@@ -66,10 +77,9 @@
             <div>
                 <h4 class="text-white font-bold mb-6">Kategori</h4>
                 <ul class="space-y-4">
-                    <li><a href="/?category=seminar-it" class="hover:text-white transition">Seminar</a></li>
-                    <li><a href="/?category=entertaiment" class="hover:text-white transition">Entertaiment</a></li>
-                    <li><a href="/?category=kompetisi" class="hover:text-white transition">Kompetisi</a></li>
-                    <li><a href="/?category=hiburan" class="hover:text-white transition">hiburan</a></li>
+                    @foreach(\App\Models\Category::all() as $cat)
+                        <li><a href="/?category={{ $cat->slug }}" class="hover:text-white transition">{{ $cat->name }}</a></li>
+                    @endforeach
                 </ul>
             </div>
 

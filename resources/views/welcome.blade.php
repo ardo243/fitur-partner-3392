@@ -100,6 +100,64 @@
         </div>
     </section>
 
+    <!-- Event Organizers Section (Penyelenggara Event Terpercaya) -->
+    <section class="w-full bg-gradient-to-br from-[#6366f1] via-[#8b5cf6] to-[#4f46e5] text-white py-24 px-6 relative overflow-hidden">
+        <!-- Floating decorative blobs -->
+        <div class="absolute top-0 left-0 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 -translate-x-1/2 -translate-y-1/2"></div>
+        <div class="absolute bottom-0 right-0 w-96 h-96 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 translate-x-1/2 translate-y-1/2"></div>
+
+        <div class="max-w-7xl mx-auto text-center relative z-10">
+            <h2 class="text-4xl md:text-5xl font-extrabold mb-6 tracking-tight">
+                Penyelenggara Event Terpercaya
+            </h2>
+            <p class="text-base md:text-lg text-white/80 max-w-2xl mx-auto mb-16 leading-relaxed">
+                Bergabunglah dalam berbagai event yang diselenggarakan oleh organisasi, komunitas, dan lembaga terpercaya. Temukan pengalaman terbaik bersama penyelenggara pilihan.
+            </p>
+
+            <!-- Cards Grid -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-8 justify-center items-stretch max-w-5xl mx-auto">
+                @foreach($organizations as $org)
+                    <a href="{{ route('organization.profile', $org->id) }}" class="bg-white rounded-3xl p-8 flex flex-col items-center justify-center shadow-lg hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 group aspect-square">
+                        <div class="w-20 h-20 flex items-center justify-center mb-6">
+                            @if($org->logo && Storage::disk('public')->exists($org->logo))
+                                <img src="{{ asset('storage/' . $org->logo) }}" alt="{{ $org->name }}" class="max-w-full max-h-full object-contain">
+                            @else
+                                <!-- Default avatar with initial and gradient -->
+                                <div class="w-full h-full rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-3xl font-bold uppercase shadow-inner">
+                                    {{ substr($org->name, 0, 1) }}
+                                </div>
+                            @endif
+                        </div>
+                        <span class="text-lg font-bold text-slate-800 tracking-tight group-hover:text-indigo-600 transition duration-300">
+                            {{ $org->name }}
+                        </span>
+                    </a>
+                @endforeach
+            </div>
+
+            <!-- Reflection Effect -->
+            <div class="hidden md:grid grid-cols-2 md:grid-cols-4 gap-8 justify-center items-stretch max-w-5xl mx-auto opacity-10 pointer-events-none select-none transform scale-y-[-1] origin-top mt-4 h-24 overflow-hidden">
+                @foreach($organizations as $org)
+                    <div class="bg-white rounded-3xl p-8 flex flex-col items-center justify-center aspect-square w-full">
+                        <div class="w-20 h-20 flex items-center justify-center mb-6">
+                            @if($org->logo && Storage::disk('public')->exists($org->logo))
+                                <img src="{{ asset('storage/' . $org->logo) }}" alt="{{ $org->name }}" class="max-w-full max-h-full object-contain">
+                            @else
+                                <div class="w-full h-full rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-3xl font-bold uppercase">
+                                    {{ substr($org->name, 0, 1) }}
+                                </div>
+                            @endif
+                        </div>
+                        <span class="text-lg font-bold text-slate-800 tracking-tight">
+                            {{ $org->name }}
+                        </span>
+                    </div>
+                @endforeach
+            </div>
+
+        </div>
+    </section>
+
     <!-- Trusted Partners Section -->
     <section class="max-w-7xl mx-auto px-6 py-20 border-t border-slate-100">
         <div class="text-center max-w-xl mx-auto mb-16">

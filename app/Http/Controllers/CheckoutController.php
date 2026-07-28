@@ -11,6 +11,10 @@ class CheckoutController extends Controller
 {
     public function create(Event $event)
     {
+        if (now()->gt($event->date)) {
+            return redirect()->route('events.show', $event->id)->with('error', 'Mohon maaf, acara ini sudah selesai sehingga pemesanan tiket telah ditutup.');
+        }
+
         // Mengambil daftar kategori untuk keperluan menu footer
      $categories = \App\Models\Category::all();
 
@@ -26,7 +30,11 @@ class CheckoutController extends Controller
             'customer_phone' => 'required|string|max:20',
         ]);
 
-        // 2. Cegah Check-out Jika Tiket Habis
+        // 2. Cegah Check-out Jika Acara Sudah Selesai atau Tiket Habis
+        if (now()->gt($event->date)) {
+            return redirect()->route('events.show', $event->id)->with('error', 'Mohon maaf, acara ini sudah selesai sehingga pemesanan tiket telah ditutup.');
+        }
+
         if ($event->stock <= 0) {
             return back()->with('error', 'Mohon maaf, tiket untuk acara ini sudah habis.');
         }
