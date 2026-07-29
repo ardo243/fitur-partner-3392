@@ -67,6 +67,17 @@
         </div>
     </div>
 
+    <!-- Analytics Chart -->
+    <div class="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden mt-6 mb-8">
+        <div class="p-8 border-b border-slate-100">
+            <h3 class="font-extrabold text-xl text-slate-800">Analitik Pendapatan</h3>
+            <p class="text-slate-400 text-sm font-medium mt-1">Tren pendapatan dari tiket event Anda selama 6 bulan terakhir</p>
+        </div>
+        <div class="p-6">
+            <div id="revenueChart" class="w-full h-80"></div>
+        </div>
+    </div>
+
     <!-- Latest Sales Table -->
     <div class="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
         <div class="p-8 border-b border-slate-100 flex justify-between items-center">
@@ -122,3 +133,83 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    var options = {
+        series: [{
+            name: 'Pendapatan',
+            data: @json($revenueGrowth)
+        }],
+        chart: {
+            height: 350,
+            type: 'area',
+            fontFamily: 'inherit',
+            toolbar: { show: false },
+            zoom: { enabled: false }
+        },
+        colors: ['#4f46e5'], // indigo-600
+        dataLabels: { enabled: false },
+        stroke: {
+            curve: 'smooth',
+            width: 3
+        },
+        fill: {
+            type: 'gradient',
+            gradient: {
+                shadeIntensity: 1,
+                opacityFrom: 0.4,
+                opacityTo: 0.05,
+                stops: [0, 90, 100]
+            }
+        },
+        xaxis: {
+            categories: @json($months),
+            axisBorder: { show: false },
+            axisTicks: { show: false },
+            labels: {
+                style: {
+                    colors: '#94a3b8',
+                    fontWeight: 600
+                }
+            }
+        },
+        yaxis: {
+            labels: {
+                formatter: function (value) {
+                    if (value >= 1000000) {
+                        return "Rp " + (value / 1000000).toFixed(1) + " Jt";
+                    } else if (value >= 1000) {
+                        return "Rp " + (value / 1000).toFixed(0) + " Rb";
+                    }
+                    return "Rp " + value;
+                },
+                style: {
+                    colors: '#94a3b8',
+                    fontWeight: 600
+                }
+            }
+        },
+        grid: {
+            borderColor: '#f1f5f9',
+            strokeDashArray: 4,
+            xaxis: { lines: { show: true } },
+            yaxis: { lines: { show: true } },
+            padding: { top: 0, right: 0, bottom: 0, left: 10 }
+        },
+        tooltip: {
+            y: {
+                formatter: function (val) {
+                    return "Rp " + new Intl.NumberFormat('id-ID').format(val)
+                }
+            }
+        }
+    };
+
+    var chart = new ApexCharts(document.querySelector("#revenueChart"), options);
+    chart.render();
+});
+</script>
+@endpush

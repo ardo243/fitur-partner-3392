@@ -13,6 +13,9 @@ class CheckoutController extends Controller
 {
     public function create(Event $event)
     {
+        // Lazy Cleanup: Otomatis merilis tiket dari transaksi expired (6+ menit)
+        \App\Models\Transaction::releaseAllExpired();
+
         if (now()->gt($event->date)) {
             return redirect()->route('events.show', $event->id)->with('error', 'Mohon maaf, acara ini sudah selesai sehingga pemesanan tiket telah ditutup.');
         }
@@ -29,6 +32,9 @@ class CheckoutController extends Controller
 
     public function store(Request $request, Event $event)
     {
+        // Lazy Cleanup: Otomatis merilis tiket dari transaksi expired (6+ menit)
+        \App\Models\Transaction::releaseAllExpired();
+
         // 1. Validasi Input
         $request->validate([
             'customer_name'   => 'required|string|max:255',
@@ -42,73 +48,90 @@ class CheckoutController extends Controller
             return redirect()->route('events.show', $event->id)->with('error', 'Mohon maaf, acara ini sudah selesai sehingga pemesanan tiket telah ditutup.');
         }
 
-        if ($event->stock <= 0) {
-            return back()->with('error', 'Mohon maaf, tiket untuk acara ini sudah habis.');
-        }
+        try {
+            \Illuminate\Support\Facades\DB::beginTransaction();
 
-        // 3. Tentukan tier dan harga dasar secara otomatis (Sistem mencari kategori yang aktif)
-        $selectedTier = $event->getActiveTier();
-        
-        $basePrice = $selectedTier ? $selectedTier->price : $event->price;
+            // Lock event row to prevent race condition
+            $lockedEvent = Event::where('id', $event->id)->lockForUpdate()->first();
 
-        // 4. Proses Voucher (jika ada)
-        $discountAmount = 0;
-        $voucherId = null;
-
-        if ($request->filled('voucher_code')) {
-            $voucher = Voucher::where('code', strtoupper($request->voucher_code))->first();
-            if ($voucher && $voucher->isValid()) {
-                $discountAmount = $voucher->calculateDiscount($basePrice);
-                $voucherId = $voucher->id;
+            if ($lockedEvent->stock <= 0) {
+                \Illuminate\Support\Facades\DB::rollBack();
+                return back()->with('error', 'Mohon maaf, tiket untuk acara ini sudah habis.');
             }
-        }
 
-        // 5. Hitung total akhir (harga - diskon + biaya admin)
-        // Bebaskan biaya admin jika tiket aslinya gratis (Rp 0)
-        $adminFee = ($basePrice == 0) ? 0 : 5000;
-        $totalPrice = max(0, $basePrice - $discountAmount) + $adminFee;
+            // 3. Tentukan tier dan harga dasar secara otomatis
+            $selectedTier = $lockedEvent->getActiveTier();
+            $basePrice = $selectedTier ? $selectedTier->price : $lockedEvent->price;
 
-        // 6. Generate Kode TRX (Unik)
-        $orderId = 'TRX-' . time() . '-' . Str::random(5);
+            // 4. Proses Voucher (jika ada)
+            $discountAmount = 0;
+            $voucherId = null;
 
-        // 7. Rekam Transaksi ke Database
-        $transaction = Transaction::create([
-            'event_id'        => $event->id,
-            'voucher_id'      => $voucherId,
-            'ticket_tier_id'  => $selectedTier?->id,
-            'order_id'        => $orderId,
-            'customer_name'   => $request->customer_name,
-            'customer_email'  => $request->customer_email,
-            'customer_phone'  => $request->customer_phone,
-            'total_price'     => $totalPrice,
-            'discount_amount' => $discountAmount,
-            'status'          => 'Pending',
-        ]);
+            if ($request->filled('voucher_code')) {
+                $voucher = Voucher::where('code', strtoupper($request->voucher_code))->lockForUpdate()->first();
+                if ($voucher && $voucher->isValid()) {
+                    $discountAmount = $voucher->calculateDiscount($basePrice);
+                    $voucherId = $voucher->id;
+                }
+            }
 
-        // 8. Jika voucher valid, tambah used_count
-        if ($voucherId) {
-            Voucher::where('id', $voucherId)->increment('used_count');
-        }
+            // 5. Hitung total akhir (harga - diskon + biaya admin)
+            $adminFee = ($basePrice == 0) ? 0 : 5000;
+            $totalPrice = max(0, $basePrice - $discountAmount) + $adminFee;
 
-        // 9. Jika tier digunakan, tambah sold_count
-        if ($selectedTier) {
-            $selectedTier->increment('sold_count');
+            // 6. Generate Kode TRX (Unik)
+            $orderId = 'TRX-' . time() . '-' . Str::random(5);
+
+            // 7. Rekam Transaksi ke Database
+            $transaction = Transaction::create([
+                'event_id'        => $lockedEvent->id,
+                'voucher_id'      => $voucherId,
+                'ticket_tier_id'  => $selectedTier?->id,
+                'order_id'        => $orderId,
+                'customer_name'   => $request->customer_name,
+                'customer_email'  => $request->customer_email,
+                'customer_phone'  => $request->customer_phone,
+                'total_price'     => $totalPrice,
+                'discount_amount' => $discountAmount,
+                'status'          => 'Pending',
+            ]);
+
+            // 8. Jika voucher valid, reserve used_count
+            if ($voucherId) {
+                $voucher->increment('used_count');
+            }
+
+            // 9. Jika tier digunakan, reserve sold_count
+            if ($selectedTier) {
+                $lockedTier = TicketTier::where('id', $selectedTier->id)->lockForUpdate()->first();
+                if ($lockedTier && $lockedTier->isAvailable()) {
+                    $lockedTier->increment('sold_count');
+                } else {
+                    \Illuminate\Support\Facades\DB::rollBack();
+                    return back()->with('error', 'Mohon maaf, kuota tier tiket ini sudah habis.');
+                }
+            }
+
+            // 10. Reserve Event Stock (Kurangi stok seketika)
+            $lockedEvent->decrement('stock');
+
+            \Illuminate\Support\Facades\DB::commit();
+
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            return back()->with('error', 'Terjadi kesalahan sistem saat memproses pesanan: ' . $e->getMessage());
         }
 
         // --- LOGIKA BYPASS UNTUK ACARA GRATIS ---
         if ($totalPrice == 0) {
             $transaction->update(['status' => 'success']);
 
-            if ($event->stock > 0) {
-                $event->stock = $event->stock - 1;
-                $event->save();
-
-                try {
-                    \Illuminate\Support\Facades\Mail::to($transaction->customer_email)
-                        ->send(new \App\Mail\EventTicketMail($transaction));
-                } catch (\Exception $e) {
-                    \Log::error('Gagal mengirim email E-Ticket: ' . $e->getMessage());
-                }
+            // Stok sudah dikurangi di blok reserve atas, jadi langsung kirim email
+            try {
+                \Illuminate\Support\Facades\Mail::to($transaction->customer_email)
+                    ->send(new \App\Mail\EventTicketMail($transaction));
+            } catch (\Exception $e) {
+                \Log::error('Gagal mengirim email E-Ticket: ' . $e->getMessage());
             }
 
             return redirect()->route('checkout.success', $transaction->order_id)->with('success', 'Transaksi berhasil, tiket Anda telah diterbitkan!');
@@ -132,6 +155,11 @@ class CheckoutController extends Controller
                 'email'      => $request->customer_email,
                 'phone'      => $request->customer_phone,
             ],
+            'expiry' => [
+                'start_time' => date("Y-m-d H:i:s O"),
+                'unit'       => 'minute',
+                'duration'   => 5
+            ],
         ];
 
         try {
@@ -139,6 +167,16 @@ class CheckoutController extends Controller
             $transaction->update(['snap_token' => $snapToken]);
             return redirect()->route('checkout.payment', $transaction->order_id);
         } catch (\Exception $e) {
+            // RELEASE RESERVE JIKA GAGAL MENDAPATKAN SNAP TOKEN
+            Event::where('id', $event->id)->increment('stock');
+            if ($transaction->ticket_tier_id) {
+                TicketTier::where('id', $transaction->ticket_tier_id)->decrement('sold_count');
+            }
+            if ($transaction->voucher_id) {
+                Voucher::where('id', $transaction->voucher_id)->decrement('used_count');
+            }
+            $transaction->update(['status' => 'failed']);
+
             return back()->with('error', 'Gagal memproses pembayaran: ' . $e->getMessage());
         }
     }
@@ -218,16 +256,12 @@ class CheckoutController extends Controller
                 if (strtolower($transaction->status) === 'pending') {
                     $transaction->update(['status' => 'success']);
 
-                    if ($transaction->event && $transaction->event->stock > 0) {
-                        $transaction->event->stock = $transaction->event->stock - 1;
-                        $transaction->event->save();
-
-                        try {
-                            \Illuminate\Support\Facades\Mail::to($transaction->customer_email)
-                                ->send(new \App\Mail\EventTicketMail($transaction));
-                        } catch (\Exception $e) {
-                            \Log::error('Gagal mengirim email E-Ticket: ' . $e->getMessage());
-                        }
+                    // Stok sudah dikurangi di awal (Reserve), jadi cukup kirim email
+                    try {
+                        \Illuminate\Support\Facades\Mail::to($transaction->customer_email)
+                            ->send(new \App\Mail\EventTicketMail($transaction));
+                    } catch (\Exception $e) {
+                        \Log::error('Gagal mengirim email E-Ticket: ' . $e->getMessage());
                     }
                 }
             }

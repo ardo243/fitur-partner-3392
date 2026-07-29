@@ -44,6 +44,9 @@ class MidtransWebhookController extends Controller
             $transaction->status = 'settlement';
             $this->processSuccess($transaction);
         } else if (in_array($transactionStatus, ['cancel', 'deny', 'expire'])) {
+            if ($transaction->status !== 'failed') {
+                $this->processFailed($transaction);
+            }
             $transaction->status = 'failed';
         } else if ($transactionStatus == 'pending') {
             $transaction->status = 'pending';
@@ -53,16 +56,13 @@ class MidtransWebhookController extends Controller
         return response()->json(['message' => 'OK']);
     }
 
-       private function processSuccess(Transaction $transaction)
+    private function processSuccess(Transaction $transaction)
     {
         $event = $transaction->event;
         
-        // Jika tiket masih ada dan terhubung dengan data event, kurangi jumlahnya sebanyak 1
-        if ($event && $event->stock > 0) {
-            $event->stock = $event->stock - 1;
-            $event->save();
-            
-            // Mengirimkan email E-Ticket ke pelanggan
+        // Stok tiket sudah di-reserve (dikurangi) di CheckoutController
+        // Jadi kita hanya perlu mengirimkan email E-Ticket ke pelanggan
+        if ($event) {
             try {
                 \Illuminate\Support\Facades\Mail::to($transaction->customer_email)->send(new \App\Mail\EventTicketMail($transaction));
             } catch (\Exception $e) {
@@ -71,8 +71,23 @@ class MidtransWebhookController extends Controller
                     'customer_email' => $transaction->customer_email,
                 ]);
             }
-        } else {
-            \Log::warning('Stock habis setelah pembayaran berhasil (Perlu proses refund opsional). Order: ' . $transaction->order_id);
+        }
+    }
+
+    private function processFailed(Transaction $transaction)
+    {
+        // Melepas tiket yang sebelumnya di-reserve (Release Reserve)
+        $event = $transaction->event;
+        if ($event) {
+            $event->increment('stock');
+        }
+
+        if ($transaction->ticket_tier_id) {
+            \App\Models\TicketTier::where('id', $transaction->ticket_tier_id)->decrement('sold_count');
+        }
+
+        if ($transaction->voucher_id) {
+            \App\Models\Voucher::where('id', $transaction->voucher_id)->decrement('used_count');
         }
     }
 }

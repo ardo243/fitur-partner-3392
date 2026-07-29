@@ -231,7 +231,7 @@
                     ->where('customer_email', auth()->user()->email)
                     ->whereIn('status', ['success', 'settlement'])
                     ->exists();
-                $eventFinished = now()->gt($event->date->copy()->addDay());
+                $eventFinished = now()->gt($event->date);
                 $hasReviewed = \App\Models\Review::where('event_id', $event->id)
                     ->where('user_id', auth()->user()->id)
                     ->exists();

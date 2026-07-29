@@ -34,6 +34,30 @@ class DashboardController extends Controller
             $query->where('organization_id', $organizationId);
         })->with('event')->latest()->take(5)->get();
 
-        return view('organization.dashboard', compact('totalRevenue', 'ticketsSold', 'activeEvents', 'pendingOrders', 'recentTransactions'));
+        // 6. Data Grafik Analytics 6 Bulan Terakhir
+        $months = [];
+        $revenueGrowth = [];
+
+        for ($i = 5; $i >= 0; $i--) {
+            $date = \Carbon\Carbon::now()->subMonths($i);
+            $monthName = $date->translatedFormat('M');
+            $year = $date->year;
+            $month = $date->month;
+
+            $months[] = $monthName;
+
+            $revenueGrowth[] = \App\Models\Transaction::whereHas('event', function ($query) use ($organizationId) {
+                    $query->where('organization_id', $organizationId);
+                })
+                ->whereIn('status', ['settlement', 'success'])
+                ->whereYear('created_at', $year)
+                ->whereMonth('created_at', $month)
+                ->sum('total_price');
+        }
+
+        return view('organization.dashboard', compact(
+            'totalRevenue', 'ticketsSold', 'activeEvents', 'pendingOrders', 'recentTransactions', 
+            'months', 'revenueGrowth'
+        ));
     }
 }

@@ -13,6 +13,9 @@ class DashboardController extends Controller
 {
     public function index()
     {
+        // Jalankan lazy cleanup untuk mengembalikan stok transaksi yang expired
+        \App\Models\Transaction::releaseAllExpired();
+
         // 1. Total Pendapatan dari Transaksi Lunas
         $totalRevenue = Transaction::whereIn('status', ['settlement', 'success'])->sum('total_price');
         
